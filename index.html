@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AUDITORÍAS 5S - AMFA VITRUM</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root { --primary: #1a73e8; --danger: #d93025; --success: #1e8e3e; --na: #5f6368; --bg: #f8f9fa; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; }
+        .container { max-width: 900px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: auto; }
+        .header-title { text-align: center; padding: 15px; border-bottom: 2px solid #e8f0fe; color: var(--primary); margin: 0; }
+        .seccion { display: none; padding: 20px; }
+        .seccion.active { display: block; }
+        .grid-header { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .field { display: flex; flex-direction: column; margin-bottom: 10px; }
+        label { font-size: 0.8rem; font-weight: bold; color: #5f6368; margin-bottom: 5px; text-transform: uppercase; }
+        input, select, textarea { padding: 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; }
+        .zona-header { background: #34495e; color: white; padding: 12px 15px; font-weight: bold; text-transform: uppercase; margin-top: 20px; border-radius: 4px; }
+        .item-pregunta { padding: 15px; border-bottom: 1px solid #f1f3f4; background: white; border: 2px solid transparent; border-radius: 8px; margin-bottom: 5px; }
+        .error-resaltado { border: 3px dashed var(--danger) !important; background: #fff8f8 !important; }
+        .opciones-respuesta { display: flex; gap: 8px; margin-top: 10px; }
+        .opt-label { flex: 1; text-align: center; padding: 10px; border: 1px solid #dadce0; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center; min-height: 45px; }
+        input[type="radio"] { display: none; }
+        input[value="B"]:checked + .opt-label { background: var(--success); color: white; border-color: var(--success); }
+        input[value="M"]:checked + .opt-label { background: var(--danger); color: white; border-color: var(--danger); }
+        input[value="NA"]:checked + .opt-label { background: var(--na); color: white; border-color: var(--na); }
+        .nc-box { display: none; background: #f1f3f4; padding: 15px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #bdc3c7; }
+        .nc-box.malo { background: #fff5f5; border-left-color: var(--danger); }
+        .nc-box.bueno { background: #f0f7ff; border-left-color: var(--primary); }
+        .gallery { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .thumb-container { position: relative; width: 80px; height: 80px; }
+        .thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; }
+        .btn-del { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 22px; height: 22px; border: none; cursor: pointer; }
+        .btn-blue { background: var(--primary); color: white; border: none; padding: 18px; width: 100%; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        #modalConfirm { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
+        .modal-content { background:white; padding:20px; border-radius:8px; width:90%; max-width:400px; text-align:center; }
+    </style>
+</head>
+<body onload="inicializar()">
+
+<div id="modalConfirm">
+    <div class="modal-content">
+        <h3>Auditoría Finalizada</h3>
+        <p>¿Qué desea hacer con los datos actuales?</p>
+        <button class="btn-blue" onclick="procesarFinal(true)">DESCARGAR Y LIMPIAR TODO</button>
+        <button class="btn-blue" style="background:#607d8b" onclick="procesarFinal(false)">SOLO DESCARGAR</button>
+    </div>
+</div>
+
+<div class="container">
+    <h2 class="header-title">AUDITORÍAS 5S - AMFA VITRUM</h2>
+    <form id="mainForm" onsubmit="return false;">
+        <div id="paso1" class="seccion active">
+            <div class="grid-header">
+                <div class="field">
+                    <label>NRO DE AUDITORÍA (ENTERO > 0) *</label>
+                    <input type="number" id="info-nro-audit" min="1" step="1" placeholder="Ej: 1, 2, 3..." oninput="quitarError(this)">
+                </div>
+                <div class="field"><label>AUDITOR *</label><select id="info-auditor" onchange="quitarError(this)">
+                    <option value="">Seleccione...</option>
+                    <option>MANUEL YUCRA</option>
+                    <option>BLADIMIR PALACIOS</option>
+                    <option>CHRISTIAN VARGAS</option>
+                    <option>SANDRA DIAZ</option>
+                    <option>EDWIN MARIANO</option>
+                    <option>STEPHANIE QUISPE</option>
+                    <option>HENRY EULOGIO</option>
+                    <option>EDUAR MONSALVE</option>
+                    <option>ANTHONY CORI</option>
+                    <option>VICTOR PAREDES</option>
+                </select></div>
+                <div class="field"><label>FECHA *</label><input type="date" id="info-fecha" onchange="quitarError(this)"></div>
+                <div class="field"><label>HORA INICIO *</label><input type="time" id="info-hora" onchange="quitarError(this)"></div>
+                <div class="field"><label>LÍNEA *</label><select id="info-linea" onchange="quitarError(this)"><option value="">Seleccione...</option><option>MA-01</option><option>MA-02</option><option>MA-03</option><option>MA-04</option><option>MA-05</option><option>MA-06</option><option>MA-08</option><option>MA-09</option><option>MA-10</option><option>FV-01</option><option>FV-03</option><option>FV-04</option><option>FV-05</option><option>FV-06</option></select></div>
+                <div class="field"><label>REGULADOR *</label><select id="info-regulador" onchange="quitarError(this)">
+                    <option value="">Seleccione...</option><option value="NA">NA</option>
+                    <option>JULIAN FLORES</option><option>ARMANDO BERNAOLA</option><option>MILTON GARCIA</option>
+                    <option>GERMAN GUZMAN</option><option>ALEXIS LOPEZ</option><option>ANTONIO MARTINEZ</option>
+                    <option>LUIS FERNANDEZ</option><option>ANGEL SANCHEZ</option><option>ROBERTO AMASIFUEN</option>
+                    <option>ALEJANDRO SALINAS</option>
+                    <option>ROBERTO ESPINOZA</option><option>MAX FATAMA</option><option>PEDRO RIVAS</option>
+                </select></div>
+                <div class="field"><label>OPERADOR *</label><input type="text" id="info-operador" placeholder="o NA" oninput="quitarError(this)"></div>
+                <div class="field"><label>VERIFICADOR *</label><input type="text" id="info-verificador" placeholder="o NA" oninput="quitarError(this)"></div>
+                <div class="field"><label>ESTADO *</label><select id="info-estado" onchange="quitarError(this)"><option value="">Seleccione...</option><option>EN OPERACION</option><option>EN PREPARACION</option><option>INHABILITADA</option></select></div>
+                <div class="field"><label>OP (9 DÍG o NA) *</label><input type="text" id="info-op" placeholder="Ej: 123456789" oninput="quitarError(this)"></div>
+                <div class="field"><label>LOTE *</label><input type="text" id="info-lote" placeholder="o NA" oninput="quitarError(this)"></div>
+            </div>
+            <button type="button" class="btn-blue" onclick="irAPaso2()">CONTINUAR EVALUACIÓN</button>
+        </div>
+
+        <div id="paso2" class="seccion">
+            <div id="contenedor-preguntas"></div>
+            <button type="button" id="btnFinalizar" class="btn-blue" style="background:var(--success)" onclick="validarAuditoria()">FINALIZAR Y DESCARGAR</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let db;
+    const request = indexedDB.open("AuditPhotosDB", 1);
+    request.onupgradeneeded = e => { e.target.result.createObjectStore("photos", { keyPath: "id" }); };
+    request.onsuccess = e => { db = e.target.result; renderizar(); cargarProgresoTexto(); cargarFotosGuardadas(); };
+
+    const preguntasData = [
+        {z: "MATERIA PRIMA", p: "¿No hay objetos ajenos a la zona (herramientas, guantes,piezas, etc.) y solo se encuentra materia prima para la OP actual?"},
+        {z: "MATERIA PRIMA", p: "¿La materia prima,soporte y depósito de plástico tienen un lugar asignado y están ubicados correctemente?"},
+        {z: "MATERIA PRIMA", p: "¿El área está limpia y libre de cartones, plásticos, polvo o residuos?"},
+        {z: "MATERIA PRIMA", p: "¿Las delimitaciones y rótulos de la zona de materia prima están en buen estado?"},
+        {z: "FORMADORA", p: "¿El área está libre de objetos ajenos a la actividad(ej. cartones, plástico, escoba, trapos, herramientas,etc.) ?"},
+        {z: "FORMADORA", p: "¿El depósito de merma contiene solo piezas del lote en producción?"},
+        {z: "FORMADORA", p: "¿Los elementos (encendedor, aceite, agua, tachos) tienen un lugar asigando y estan ubicados correctamente?"},
+        {z: "FORMADORA", p: "¿La formadora y elementos de su entorno (ej, tacho, tablero, tuberías) están limpios, sin grasa, polvo ni residuos de vidrio?"},
+        {z: "FORMADORA", p: "¿Existen delimitaciones y rotulos en (ej.mandriles, mecheros, controles, alarmas, tuberías, sistemas de seguridad, tachos, etc) y estan en buen estado?"},
+        {z: "CADENA DE TRANSPORTE 1 Y ZONA DE IMPRESION", p: "¿No hay materiales ajenos a la actividad propia del lugar (trapos, cartones, herramientas, etc.)?"},
+        {z: "CADENA DE TRANSPORTE 1 Y ZONA DE IMPRESION", p: "¿No se encuentran mezclados los productos (ej. papel higiénico, trapos,etc.) y productos de prueba o no conformes, en los tachos de basura y estos tienen un lugar asignado?"},
+        {z: "CADENA DE TRANSPORTE 1 Y ZONA DE IMPRESION", p: "¿El área, piso, y tachos se encuentran limpios, libres de residuos de vidrio, polvo, manchas de pintura o grasa?"},
+        {z: "CADENA DE TRANSPORTE 1 Y ZONA DE IMPRESION", p: "¿Existen rotulos en la cadena, tachos,equipos,botones y las señalizaciones de seguridad y están en buen estado, al igual que la delimitación en el piso de los tachos?"},
+        {z: "COCHE", p: "¿No se observan objetos ajenos al coche (ej. Objetos personales, afloja todo, piezas de máquina, etc.)?"},
+        {z: "COCHE", p: "¿Todos los  elementos del coche (materiales, pintura, aceite, herramienta,etc) tienen un lugar asignado y estan ubicados correctamente?"},
+        {z: "COCHE", p: "¿El coche y su área se perciben limpios?"},
+        {z: "COCHE", p: "¿Las delimitaciones y rótulos del coche están en buen estado?"},
+        {z: "HORNO Y TABLERO", p: "¿No existen objetos ajenos (ej. tubos de vidrio, herramientas,etc)   en la zona del horno?"},
+        {z: "HORNO Y TABLERO", p: "¿Los elementos de la zona, piso y horno están limpios (ej. piso limpio, libre de polvo, derrames, exceso de fibra de vidrio y/o aceite)?"},
+        {z: "HORNO Y TABLERO", p: "¿Existen señales visuales (riesgo de alta temperatura, botones del tablero, horno) están visibles, colocadas en sus lugares respectivo y en buen estado?"},
+        {z: "CADENA DE TRANSPORTE 2 Y ZONA DE RANGUEO O EMBALAJE", p: "¿No hay materiales ajenos a la actividad propia del lugar (trapos, cartones, herramientas, etc.)?"},
+        {z: "CADENA DE TRANSPORTE 2 Y ZONA DE RANGUEO O EMBALAJE", p: "¿Los elementos de la zona y el piso están limpios (ej. libre de residuos de vidrio, polvo, grasa y/o manchas de pintura)?"},
+        {z: "CADENA DE TRANSPORTE 2 Y ZONA DE RANGUEO O EMBALAJE", p: "¿Las partes,elementos y las zonas de trabajo (Ej.: cadena de transporte 2, ventilador 2, zona de rangos,etc.)  están rotuladas y en buen estado? "},
+        {z: "MESA DE REVISIÓN", p: "¿No se observan objetos ajenos a la mesa de revisión (ej. Objetos personales,piezas de maquina, etc.)?"},
+        {z: "MESA DE REVISIÓN", p: "¿Los elementos  (bandejas, stickers, bandejas por revisar,bandejas revisadas) están  ubicados en su lugar asignado?"},
+        {z: "MESA DE REVISIÓN", p: "La mesa y su área se perciben limpios"},
+        {z: "MESA DE REVISIÓN", p: "¿La instalaciones (vidrio, conexiones electricas,banco,etc), delimitaciones y rótulos se encuentran en buen estado?"},
+        {z: "ZONA DE PRODUCTO TERMINADO", p: "¿No se observan objetos innecesarios (ej. stretch film, cartones, bolsas, etc.) en el área de la parihuela y solo lo ocupa un tipo de producto?"},
+        {z: "ZONA DE PRODUCTO TERMINADO", p: "¿El producto terminado tiene un lugar asignado y está ubicado correctemente ?"},
+        {z: "ZONA DE PRODUCTO TERMINADO", p: "¿Cada bandeja esta identificada con su sticker de datos del producto y su tapa de acuerdo al tamaño?"},
+        {z: "ZONA DE PRODUCTO TERMINADO", p: "Los elementos de la zona y el piso están limpios (ej. libre de residuos de vidrio, polvo, grasa y/o manchas de pintura)"},
+        {z: "ZONA DE PRODUCTO TERMINADO", p: "¿Las delimitacion,rotulo de la zona  y los stickers de cada banadejas estan en buen estado?"},
+        {z: "TODA LA LÍNEA Y ENTORNO", p: "¿Se han retirado elementos innecesarios de las zonas de tránsito?"},
+        {z: "TODA LA LÍNEA Y ENTORNO", p: "¿Se han dispuesto articulos y herramientas por uso diario y ocasionales (ej,tachos,escobas,recogedor,ventiladores de pie, etc.)?"},
+        {z: "TODA LA LÍNEA Y ENTORNO", p: "¿Existen espacios y elementos para disponer la basura y se encuentran delimitados?"},
+        {z: "TODA LA LÍNEA Y ENTORNO", p: "¿El piso y las áreas comunes están limpias y libres de residuos o derrames?"},
+        {z: "TODA LA LÍNEA Y ENTORNO", p: "¿Los pisos están en buenas condiciones físicas, parejos, regulares, no resbaladizos, sin rajaduras, etc.?"},
+        {z: "TODA LA LÍNEA Y ENTORNO", p: "¿Las señales visuales y delimitaciones se mantienen uniformes en toda la línea?"},
+        {z: "PERSONAL", p: "¿Usa correctamente sus EPP's (ej. zapatos, tapones auditivos, lentes y guantes según su actividad)?"},
+        {z: "PERSONAL", p: "¿Su uniforme se encuentra en buenas condiciones y es acorde al modelo vigente?"},
+        {z: "PERSONAL", p: "¿El personal conoce y aplica la importancia de las 5S?"}
+    ];
+
+    function renderizar() {
+        const cont = document.getElementById('contenedor-preguntas');
+        cont.innerHTML = ""; let currentZ = "";
+        preguntasData.forEach((item, i) => {
+            const id = i + 1;
+            if(item.z !== currentZ) { const h = document.createElement('div'); h.className='zona-header'; h.innerText=item.z; cont.appendChild(h); currentZ=item.z; }
+            const div = document.createElement('div'); div.className='item-pregunta'; div.id=`card-${id}`;
+            div.innerHTML = `<p><strong>${id}.</strong> ${item.p}</p><div class="opciones-respuesta"><input type="radio" name="p${id}" id="p${id}b" value="B" onclick="handleRadio(${id},'B')"><label class="opt-label" for="p${id}b">BUENO</label><input type="radio" name="p${id}" id="p${id}m" value="M" onclick="handleRadio(${id},'M')"><label class="opt-label" for="p${id}m">MALO</label><input type="radio" name="p${id}" id="p${id}na" value="NA" onclick="handleRadio(${id},'NA')"><label class="opt-label" for="p${id}na">NA</label></div><div id="nc-${id}" class="nc-box"><textarea id="obs-${id}" placeholder="Comentario obligatorio si hay fotos o si es MALO..." oninput="verificarItemCompleto(${id})"></textarea><div class="gallery" id="gal-${id}"></div><label style="background:#555;color:white;padding:12px;border-radius:4px;display:block;text-align:center;margin-top:10px;font-size:0.9rem;cursor:pointer;">📷 AÑADIR FOTO (MÁX 3)<input type="file" accept="image/*" capture="environment" style="display:none" onchange="subirFoto(${id}, this)"></label></div>`;
+            cont.appendChild(div);
+        });
+    }
+
+    function inicializar() { const ahora = new Date(); document.getElementById('info-fecha').value = ahora.toISOString().split('T')[0]; document.getElementById('info-hora').value = ahora.toTimeString().split(' ')[0].substring(0, 5); }
+    function salvarFotoDB(idItem, base64Array) { db.transaction("photos", "readwrite").objectStore("photos").put({ id: idItem, images: base64Array }); }
+    function cargarFotosGuardadas() { db.transaction("photos", "readonly").objectStore("photos").openCursor().onsuccess = e => { const cursor = e.target.result; if (cursor) { cursor.value.images.forEach(base64 => dibujarThumb(cursor.value.id, base64, false)); cursor.continue(); } }; }
+    function borrarFotosDB() { db.transaction("photos", "readwrite").objectStore("photos").clear(); }
+    function dibujarThumb(idItem, base64, guardar) { const div = document.createElement('div'); div.className = 'thumb-container'; div.dataset.base = base64; div.innerHTML = `<img src="${base64}" class="thumb"><button class="btn-del" type="button" onclick="eliminarFoto(${idItem}, this)">×</button>`; document.getElementById('gal-'+idItem).appendChild(div); if(guardar) persistirFotosItem(idItem); }
+    function eliminarFoto(idItem, btn) { btn.parentElement.remove(); persistirFotosItem(idItem); verificarItemCompleto(idItem); }
+    function persistirFotosItem(idItem) { const base64s = Array.from(document.getElementById('gal-'+idItem).children).map(c => c.dataset.base); salvarFotoDB(idItem, base64s); }
+    function subirFoto(id, input) { const gal = document.getElementById('gal-'+id); if (gal.children.length >= 3) { alert("⚠️ BLOQUEO: Solo se permiten máximo 3 fotos."); return; } if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = e => { dibujarThumb(id, e.target.result, true); verificarItemCompleto(id); }; reader.readAsDataURL(input.files[0]); } }
+    function handleRadio(id, val) { const box = document.getElementById('nc-'+id); box.classList.remove('bueno', 'malo'); if (val === 'NA') box.style.display = 'none'; else { box.style.display = 'block'; if(val === 'B') box.classList.add('bueno'); if(val === 'M') box.classList.add('malo'); } verificarItemCompleto(id); guardarProgresoTexto(); }
+    function verificarItemCompleto(id) { const r = document.querySelector(`input[name="p${id}"]:checked`); const card = document.getElementById('card-'+id); if(!r) return; const index = id - 1; const esPersonal = (preguntasData[index].z === "PERSONAL"); const obsLen = document.getElementById('obs-'+id).value.trim().length; const tieneFoto = document.getElementById('gal-'+id).children.length > 0; let ok = true; if(tieneFoto && obsLen < 3) ok = false; if(r.value === 'M' && (obsLen < 3 || (!esPersonal && !tieneFoto))) ok = false; if(ok) card.classList.remove('error-resaltado'); guardarProgresoTexto(); }
+
+    function irAPaso2() { 
+        const opVal = document.getElementById('info-op').value.trim();
+        const auditIn = document.getElementById('info-nro-audit').value;
+        const ids = ['info-nro-audit','info-auditor','info-fecha','info-hora','info-linea','info-regulador','info-operador','info-verificador','info-estado','info-op','info-lote']; 
+        let err = false; 
+        ids.forEach(id => { 
+            const el = document.getElementById(id); 
+            let valErr = !el.value; 
+            if(id==='info-op' && !/^(\d{9}|na)$/i.test(opVal)) valErr=true; 
+            if(id==='info-nro-audit' && (auditIn <= 0 || !Number.isInteger(Number(auditIn)))) valErr=true; 
+            if(valErr) { el.classList.add('error-resaltado'); err = true; } else el.classList.remove('error-resaltado'); 
+        }); 
+        if(err) return alert("Complete datos obligatorios. Nro Audit > 0 y OP 9 dígitos o NA."); 
+        document.getElementById('paso1').classList.remove('active'); document.getElementById('paso2').classList.add('active'); window.scrollTo(0,0); 
+    }
+
+    function quitarError(el) { el.classList.remove('error-resaltado'); guardarProgresoTexto(); }
+    function guardarProgresoTexto() { const data = {}; document.querySelectorAll('input[type="text"], input[type="number"], select, input[type="date"], input[type="time"], textarea').forEach(el => data[el.id] = el.value); document.querySelectorAll('input[type="radio"]:checked').forEach(el => data[el.name] = el.value); localStorage.setItem('audit5S_text', JSON.stringify(data)); }
+    function cargarProgresoTexto() { const raw = localStorage.getItem('audit5S_text'); if(!raw) return; const data = JSON.parse(raw); for(let key in data) { const el = document.getElementById(key); if(el) el.value = data[key]; const rb = document.querySelector(`input[name="${key}"][value="${data[key]}"]`); if(rb) { rb.checked = true; handleRadio(key.replace('p',''), data[key]); } } }
+
+    function validarAuditoria() { 
+        let error = false; let primerErr = null; 
+        for(let i=1; i<=preguntasData.length; i++) { 
+            const r = document.querySelector(`input[name="p${i}"]:checked`); 
+            const tieneFoto = document.getElementById('gal-'+i).children.length > 0; 
+            const obsLen = document.getElementById('obs-'+i).value.trim().length; 
+            const index = i - 1; const esPersonal = (preguntasData[index].z === "PERSONAL"); 
+            if(!r || (tieneFoto && obsLen < 3) || (r.value==='M' && (obsLen < 3 || (!esPersonal && !tieneFoto)))) { 
+                const card = document.getElementById('card-'+i); card.classList.add('error-resaltado'); 
+                if(!primerErr) primerErr = card; error = true; 
+            } 
+        } 
+        if(error) { primerErr.scrollIntoView({behavior:'smooth', block:'center'}); return alert("⚠️ Faltan datos o fotos en MALO / Comentarios en fotos."); } 
+        document.getElementById('modalConfirm').style.display = 'flex'; 
+    }
+
+    async function procesarFinal(limpiar) { document.getElementById('modalConfirm').style.display = 'none'; await generarExcel(); if(limpiar) { localStorage.removeItem('audit5S_text'); borrarFotosDB(); location.reload(); } }
+
+    async function generarExcel() {
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('Auditoria');
+        const ahora = new Date();
+        const dInput = document.getElementById('info-fecha').value.split('-');
+        const fechaParaExcel = `${dInput[2]}/${dInput[1]}/${dInput[0]}`;
+        const nAudit = document.getElementById('info-nro-audit').value;
+        const linea = document.getElementById('info-linea').value;
+
+        let cols = [
+            {header:'COLUMNA CLAVE', key:'clave', width:20},
+            {header:'NRO AUDITORÍA', key:'nra', width:15},
+            {header:'FECHA', key:'f', width:12},
+            {header:'HORA INICIO', key:'hi', width:12},
+            {header:'HORA FIN', key:'hf', width:12},
+            {header:'AUDITOR', key:'a', width:20},
+            {header:'LÍNEA', key:'l', width:10},
+            {header:'REGULADOR', key:'reg', width:20},
+            {header:'OPERADOR', key:'ope', width:20},
+            {header:'VERIFICADOR', key:'ver', width:20},
+            {header:'ESTADO', key:'est', width:15},
+            {header:'OP', key:'op', width:12},
+            {header:'LOTE', key:'lote', width:12}
+        ];
+
+        for(let i=1; i<=preguntasData.length; i++) {
+            const n = i < 10 ? '0'+i : i;
+            cols.push({header:`Item ${n}`, key:`p${i}`, width:10},{header:`Descripción ${n}`, key:`nc${i}`, width:25},{header:`Evidencia ${n}.1`, key:`e${i}_1`, width:22},{header:`Evidencia ${n}.2`, key:`e${i}_2`, width:22},{header:`Evidencia ${n}.3`, key:`e${i}_3`, width:22});
+        }
+        ws.columns = cols;
+
+        const info = { clave: `${nAudit}-${linea}`, nra: nAudit, f: fechaParaExcel, hi: document.getElementById('info-hora').value, hf: ahora.getHours().toString().padStart(2, '0') + ':' + ahora.getMinutes().toString().padStart(2, '0'), a: document.getElementById('info-auditor').value, l: linea, reg: document.getElementById('info-regulador').value, ope: document.getElementById('info-operador').value.toUpperCase(), ver: document.getElementById('info-verificador').value.toUpperCase(), est: document.getElementById('info-estado').value, op: document.getElementById('info-op').value.toUpperCase(), lote: document.getElementById('info-lote').value.toUpperCase() };
+
+        for(let i=1; i<=preguntasData.length; i++) { 
+            const r = document.querySelector(`input[name="p${i}"]:checked`); 
+            let valRes = '';
+            if (r) {
+                if (r.value === 'B') valRes = 'BUENO';
+                else if (r.value === 'M') valRes = 'MALO';
+                else if (r.value === 'NA') valRes = 'NO APLICA'; // MODIFICACIÓN ÍTEMS
+            }
+            info[`p${i}`] = valRes;
+            info[`nc${i}`] = (r && r.value !== 'NA') ? document.getElementById('obs-'+i).value : ''; 
+        }
+        
+        const row = ws.addRow(info); row.height = 120;
+
+        for(let i=1; i<=preguntasData.length; i++) {
+            const r = document.querySelector(`input[name="p${i}"]:checked`);
+            if (r && r.value !== 'NA') {
+                const thumbs = document.getElementById('gal-'+i).children;
+                const startCol = 13 + (i-1)*5 + 2; 
+                for(let f = 0; f < thumbs.length; f++) {
+                    const imgId = wb.addImage({ base64: thumbs[f].dataset.base, extension: 'png' });
+                    ws.addImage(imgId, {
+                        tl: { col: startCol + f, row: row.number - 1, nativeColOff: 5 * 9525, nativeRowOff: 5 * 9525 },
+                        br: { col: startCol + f + 1, row: row.number, nativeColOff: -5 * 9525, nativeRowOff: -5 * 9525 },
+                        editAs: 'oneCell'
+                    });
+                }
+            }
+        }
+        const buf = await wb.xlsx.writeBuffer();
+        saveAs(new Blob([buf]), `${fechaParaExcel.replace(/\//g, '-')}-${linea}-${info.a.toUpperCase()}.xlsx`);
+    }
+</script>
+</body>
+</html>
